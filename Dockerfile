@@ -2,7 +2,7 @@ ARG NODE_VERSION=23
 
 FROM node:${NODE_VERSION}-alpine
 
-ARG PNPM_VERSION=10.2.0
+ARG PNPM_VERSION=10.12.4
 
 LABEL maintainer="Dennis <33402703+pm-dennis@users.noreply.github.com>"
 LABEL version="${PNPM_VERSION}"
