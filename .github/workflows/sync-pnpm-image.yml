@@ -1,0 +1,52 @@
+name: Sync pnpm Docker Image with Latest Release
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  build-pnpm:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: ghcr.io/pm-dennis/pnpm
+    steps:
+      - name: Get latest pnpm release tag (without leading v)
+        id: get_tag
+        run: |
+          tag=$(curl -s https://api.github.com/repos/pnpm/pnpm/releases/latest | jq -r '.tag_name')
+          tag="${tag#v}"
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+
+      - name: Check if image already exists on GHCR
+        id: check_image
+        run: |
+          TAG=${{ steps.get_tag.outputs.tag }}
+          TOKEN=$(curl -s "https://ghcr.io/token?scope=repository:pm-dennis/pnpm:pull" | jq -r '.token')
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $TOKEN" \
+            https://ghcr.io/v2/pm-dennis/pnpm/manifests/$TAG)
+          if [ "$STATUS_CODE" = "200" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: actions/checkout@v3
+        if: steps.check_image.outputs.exists == 'true'
+
+      - name: Login to GitHub Container Registry
+        if: steps.check_image.outputs.exists == 'true'
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+
+      - name: Build and push Docker image
+        if: steps.check_image.outputs.exists == 'true'
+        run: |
+          docker build -t $IMAGE_NAME:${{ steps.get_tag.outputs.tag }} .
+          docker tag $IMAGE_NAME:${{ steps.get_tag.outputs.tag }} $IMAGE_NAME:latest
+          docker push $IMAGE_NAME:${{ steps.get_tag.outputs.tag }}
+          docker push $IMAGE_NAME:latest
