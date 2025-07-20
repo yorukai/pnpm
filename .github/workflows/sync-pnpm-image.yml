@@ -47,7 +47,7 @@ jobs:
         if: steps.check_image.outputs.exists == 'true'
         run: |
           TAG=${{ steps.get_tag.outputs.tag }}
-          docker build -t $IMAGE_NAME:$TAG .
+          docker build -t $IMAGE_NAME:$TAG --build-arg PNPM_VERSION=$TAG .
           docker tag $IMAGE_NAME:$TAG $IMAGE_NAME:latest
           docker push $IMAGE_NAME:$TAG
           docker push $IMAGE_NAME:latest
