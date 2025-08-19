@@ -1,36 +1,37 @@
-# pnpm-dockerfile
+# pnpm Docker Image Sync
 
-A lightweight Dockerfile for Node.js 23 on Alpine Linux with [pnpm](https://pnpm.io/) preinstalled using Corepack.
-
----
+This repository automatically builds and publishes a Docker image for the latest [pnpm](https://pnpm.io/) release using GitHub Actions. The image is based on Node.js Alpine and comes pre-installed with the latest `pnpm`.
 
 ## Features
 
-- Uses official `node:23-alpine` base image for minimal size.
-- Installs `pnpm` 10.15.0 via Node’s Corepack.
-- Adds `bash` shell for scripting convenience.
-- Sets up environment variables for pnpm to work seamlessly.
-- Working directory set to `/app` for easy mounting and running your Node.js projects.
+- Automatically detects the latest `pnpm` release.
+- Builds a Docker image tagged with the `pnpm` version (e.g., `10.15.0`) and `latest`.
+- Pushes the image to GitHub Container Registry (GHCR).
+- Scheduled daily updates via GitHub Actions.
 
----
+## Docker Image
 
-## Usage
+- Registry: `ghcr.io/pm-dennis/pnpm`
+- Tags:
+  - `<pnpm-version>` (e.g., `10.15.0`)
+  - `latest`
 
-Build the Docker image:
-
-```bash
-docker build -t ghcr.io/pm-dennis/pnpm:latest .
-```
-
-Run a container with your current directory mounted:
+### Example Usage
 
 ```bash
-docker run --rm -it -v "\$PWD":/app ghcr.io/pm-dennis/pnpm:latest sh
+docker pull ghcr.io/pm-dennis/pnpm:latest
+docker run --rm ghcr.io/pm-dennis/pnpm:latest pnpm --version
 ```
 
-Inside the container, you can use \`pnpm\` commands directly:
+## Workflow Overview
 
-```sh
-pnpm install
-pnpm run build
-```
+The GitHub Actions workflow:
+
+1. Detects the latest `pnpm` release.
+2. Checks if the corresponding Docker image already exists in GHCR.
+3. Builds and pushes the Docker image if it’s not already available.
+4. Tags the image with both the release version and `latest`.
+
+## Contributing
+
+Contributions are welcome! Submit issues or pull requests to improve the workflow, update dependencies, or enhance documentation.
