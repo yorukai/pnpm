@@ -7,7 +7,7 @@ A lightweight Dockerfile for Node.js 23 on Alpine Linux with [pnpm](https://pnpm
 ## Features
 
 - Uses official `node:23-alpine` base image for minimal size.
-- Installs `pnpm` 10.12.4 via Node’s Corepack.
+- Installs `pnpm` 10.15.0 via Node’s Corepack.
 - Adds `bash` shell for scripting convenience.
 - Sets up environment variables for pnpm to work seamlessly.
 - Working directory set to `/app` for easy mounting and running your Node.js projects.
