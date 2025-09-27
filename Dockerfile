@@ -10,6 +10,7 @@ LABEL description="Node.js ${NODE_VERSION} alpine image with pnpm ${PNPM_VERSION
 
 WORKDIR /app
 
+ENV PS1="\[\e[31m\]\h\[\e[0m\] \[\e[33m\]\w\[\e[0m\] \[\e[36m\]>\[\e[0m\] "
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
