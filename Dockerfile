@@ -4,7 +4,7 @@ FROM node:${NODE_VERSION}-alpine
 
 ARG PNPM_VERSION=10.15.0
 
-LABEL maintainer="Dennis <33402703+pm-dennis@users.noreply.github.com>"
+LABEL maintainer="Dennis Rummpf <33402703+yorukai@users.noreply.github.com>"
 LABEL version="${PNPM_VERSION}"
 LABEL description="Node.js ${NODE_VERSION} alpine image with pnpm ${PNPM_VERSION}"
 

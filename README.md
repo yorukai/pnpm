@@ -5,22 +5,22 @@ This repository automatically builds and publishes a Docker image for the latest
 ## Features
 
 - Automatically detects the latest `pnpm` release.
-- Builds a Docker image tagged with the `pnpm` version (e.g., `10.15.0`) and `latest`.
+- Builds a Docker image tagged with the `pnpm` version (e.g., `10.30.3`) and `latest`.
 - Pushes the image to GitHub Container Registry (GHCR).
 - Scheduled daily updates via GitHub Actions.
 
 ## Docker Image
 
-- Registry: `ghcr.io/pm-dennis/pnpm`
+- Registry: `ghcr.io/yorukai/pnpm`
 - Tags:
-  - `<pnpm-version>` (e.g., `10.15.0`)
+  - `<pnpm-version>` (e.g., `10.30.3`)
   - `latest`
 
 ### Example Usage
 
 ```bash
-docker pull ghcr.io/pm-dennis/pnpm:latest
-docker run --rm ghcr.io/pm-dennis/pnpm:latest pnpm --version
+docker pull ghcr.io/yorukai/pnpm:latest
+docker run --rm ghcr.io/yorukai/pnpm:latest pnpm --version
 ```
 
 ## Workflow Overview
