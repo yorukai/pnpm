@@ -9,7 +9,7 @@ jobs:
   build-pnpm:
     runs-on: ubuntu-latest
     env:
-      IMAGE_NAME: ghcr.io/pm-dennis/pnpm
+      IMAGE_NAME: ghcr.io/yorukai/pnpm
     steps:
       - name: Get latest pnpm release tag (without leading v)
         id: get_tag
@@ -22,10 +22,10 @@ jobs:
         id: check_image
         run: |
           TAG=${{ steps.get_tag.outputs.tag }}
-          TOKEN=$(curl -s "https://ghcr.io/token?scope=repository:pm-dennis/pnpm:pull" | jq -r '.token')
+          TOKEN=$(curl -s "https://ghcr.io/token?scope=repository:yorukai/pnpm:pull" | jq -r '.token')
           STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer $TOKEN" \
-            https://ghcr.io/v2/pm-dennis/pnpm/manifests/$TAG)
+            https://ghcr.io/v2/yorukai/pnpm/manifests/$TAG)
           if [ "$STATUS_CODE" = "200" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
