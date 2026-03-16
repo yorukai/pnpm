@@ -121,3 +121,20 @@ jobs:
           build-args: |
             PNPM_VERSION=${{ needs.get-pnpm-version.outputs.tag }}
             NODE_VERSION=${{ matrix.node_version }}
+
+  cleanup-untagged-images:
+    needs: build-pnpm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Delete untagged GHCR image versions
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: pnpm
+          package-type: container
+          min-versions-to-keep: 0
+          delete-only-untagged-versions: 'true'
+        env: ${{ secrets.GITHUB_TOKEN }}
+
