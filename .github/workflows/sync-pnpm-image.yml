@@ -47,6 +47,7 @@ jobs:
       attestations: write
     env:
       IMAGE_NAME: ghcr.io/yorukai/pnpm
+      IMAGE_MAINTAINER: Dennis Rumpf <33402703+yorukai@users.noreply.github.com>
       LATEST_NODE: '25'
     strategy:
       fail-fast: false
@@ -88,6 +89,9 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.IMAGE_NAME }}
+          labels: |
+            maintainer=${{ env.IMAGE_MAINTAINER }}
+            description=Node.js ${{ matrix.node_version }} alpine image with pnpm ${{ needs.get-pnpm-version.outputs.tag }}
           tags: |
             # 10.32.1-node23  (full pnpm + specific node — always)
             type=raw,value=${{ needs.get-pnpm-version.outputs.tag }}-node${{ matrix.node_version }}
