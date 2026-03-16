@@ -1,8 +1,8 @@
-ARG NODE_VERSION=23
+ARG NODE_VERSION=25
 
 FROM node:${NODE_VERSION}-alpine
 
-ARG PNPM_VERSION=10.15.0
+ARG PNPM_VERSION=10.32.1
 
 LABEL maintainer="Dennis Rummpf <33402703+yorukai@users.noreply.github.com>"
 LABEL version="${PNPM_VERSION}"
