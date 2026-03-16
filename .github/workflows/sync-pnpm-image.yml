@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       pnpm_version:
-        description: 'Override pnpm version (e.g. 10.5.0). Leave empty to use latest.'
+        description: 'Override pnpm version (e.g. 10.32.1). Leave empty to use latest.'
         required: false
         default: ''
 
@@ -22,8 +22,9 @@ jobs:
     env:
       PNPM_VERSION: ${{ inputs.pnpm_version }}
     outputs:
-      tag: ${{ steps.get_tag.outputs.tag }}
-      major: ${{ steps.get_tag.outputs.major }}
+      pnpm_version: ${{ steps.get_tag.outputs.pnpm_version }}
+      pnpm_major_version: ${{ steps.get_tag.outputs.pnpm_major_version }}
+      should_build: ${{ steps.check.outputs.should_build }}
     steps:
       - name: Get latest pnpm release tag (without leading v)
         id: get_tag
@@ -34,11 +35,33 @@ jobs:
             tag=$(curl -s https://api.github.com/repos/pnpm/pnpm/releases/latest | jq -r '.tag_name')
             tag="${tag#v}"
           fi
-          echo "tag=$tag" >> $GITHUB_OUTPUT
-          echo "major=$(echo "$tag" | cut -d. -f1)" >> $GITHUB_OUTPUT
+          echo "pnpm_version=$tag" >> $GITHUB_OUTPUT
+          echo "pnpm_major_version=$(echo "$tag" | cut -d. -f1)" >> $GITHUB_OUTPUT
+
+      - name: Check if any image is missing on GHCR
+        id: check
+        run: |
+          set -euo pipefail
+
+          pnpm_version='${{ steps.get_tag.outputs.pnpm_version }}'
+          token=$(curl -s "https://ghcr.io/token?scope=repository:yorukai/pnpm:pull" | jq -r '.token')
+
+          status_code=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $token" \
+            "https://ghcr.io/v2/yorukai/pnpm/manifests/$pnpm_version")
+
+          if [ "$status_code" = '200' ]; then
+            should_build='false'
+          else
+            echo "Missing image tag: $pnpm_version"
+            should_build='true'
+          fi
+
+          echo "should_build=$should_build" >> "$GITHUB_OUTPUT"
 
   build-pnpm:
     needs: get-pnpm-version
+    if: needs.get-pnpm-version.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -54,25 +77,9 @@ jobs:
       matrix:
         node_version: ['20', '22', '24', '25']
     steps:
-      - name: Check if image already exists on GHCR
-        id: check_image
-        run: |
-          TAG=${{ needs.get-pnpm-version.outputs.tag }}-node${{ matrix.node_version }}
-          TOKEN=$(curl -s "https://ghcr.io/token?scope=repository:yorukai/pnpm:pull" | jq -r '.token')
-          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer $TOKEN" \
-            https://ghcr.io/v2/yorukai/pnpm/manifests/$TAG)
-          if [ "$STATUS_CODE" = "200" ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-
       - uses: actions/checkout@v4
-        if: steps.check_image.outputs.exists == 'false'
 
       - name: Login to GitHub Container Registry
-        if: steps.check_image.outputs.exists == 'false'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -80,34 +87,31 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
-        if: steps.check_image.outputs.exists == 'false'
         uses: docker/setup-buildx-action@v3
 
       - name: Docker metadata
-        if: steps.check_image.outputs.exists == 'false'
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.IMAGE_NAME }}
           labels: |
             maintainer=${{ env.IMAGE_MAINTAINER }}
-            description=Node.js ${{ matrix.node_version }} alpine image with pnpm ${{ needs.get-pnpm-version.outputs.tag }}
+            description=Node.js ${{ matrix.node_version }} alpine image with pnpm ${{ needs.get-pnpm-version.outputs.pnpm_version }}
           tags: |
-            # 10.32.1-node23  (full pnpm + specific node — always)
-            type=raw,value=${{ needs.get-pnpm-version.outputs.tag }}-node${{ matrix.node_version }}
-            # 10-node23  (pnpm major + specific node — always)
-            type=raw,value=${{ needs.get-pnpm-version.outputs.major }}-node${{ matrix.node_version }}
-            # node23  (latest pnpm + specific node — always)
+            # 10.32.1-node25  (full pnpm + specific node — always)
+            type=raw,value=${{ needs.get-pnpm-version.outputs.pnpm_version }}-node${{ matrix.node_version }}
+            # 10-node25  (pnpm major + specific node — always)
+            type=raw,value=${{ needs.get-pnpm-version.outputs.pnpm_major_version }}-node${{ matrix.node_version }}
+            # node25  (latest pnpm + specific node — always)
             type=raw,value=node${{ matrix.node_version }}
             # 10.32.1  (full pnpm, latest node implied — latest node only)
-            type=raw,value=${{ needs.get-pnpm-version.outputs.tag }},enable=${{ matrix.node_version == env.LATEST_NODE }}
+            type=raw,value=${{ needs.get-pnpm-version.outputs.pnpm_version }},enable=${{ matrix.node_version == env.LATEST_NODE }}
             # 10  (pnpm major, latest node implied — latest node only)
-            type=raw,value=${{ needs.get-pnpm-version.outputs.major }},enable=${{ matrix.node_version == env.LATEST_NODE }}
+            type=raw,value=${{ needs.get-pnpm-version.outputs.pnpm_major_version }},enable=${{ matrix.node_version == env.LATEST_NODE }}
             # latest  (latest pnpm + latest node — latest node only)
             type=raw,value=latest,enable=${{ matrix.node_version == env.LATEST_NODE }}
 
       - name: Build and push Docker image
-        if: steps.check_image.outputs.exists == 'false'
         uses: docker/build-push-action@v6
         with:
           cache-from: type=gha,scope=node${{ matrix.node_version }}
@@ -119,11 +123,12 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            PNPM_VERSION=${{ needs.get-pnpm-version.outputs.tag }}
+            PNPM_VERSION=${{ needs.get-pnpm-version.outputs.pnpm_version }}
             NODE_VERSION=${{ matrix.node_version }}
 
   cleanup-untagged-images:
-    needs: build-pnpm
+    needs: [build-pnpm, get-pnpm-version]
+    if: needs.get-pnpm-version.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -132,9 +137,9 @@ jobs:
       - name: Delete untagged GHCR image versions
         uses: actions/delete-package-versions@v5
         with:
+          owner: ${{ github.repository_owner }}
           package-name: pnpm
           package-type: container
           min-versions-to-keep: 0
           delete-only-untagged-versions: 'true'
-        env: ${{ secrets.GITHUB_TOKEN }}
-
+          token: ${{ secrets.GITHUB_TOKEN }}
