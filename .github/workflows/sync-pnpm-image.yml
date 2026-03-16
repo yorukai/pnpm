@@ -118,9 +118,6 @@ jobs:
           cache-to: type=gha,mode=max,scope=node${{ matrix.node_version }}
           context: .
           push: true
-          provenance: true
-          sbom: true
-          platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
