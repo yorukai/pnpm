@@ -90,8 +90,8 @@ jobs:
         with:
           images: ${{ env.IMAGE_NAME }}
           labels: |
-            maintainer=${{ env.IMAGE_MAINTAINER }}
-            description=Node.js ${{ matrix.node_version }} alpine image with pnpm ${{ needs.get-pnpm-version.outputs.pnpm_version }}
+            org.opencontainers.image.authors=${{ env.IMAGE_MAINTAINER }}
+            org.opencontainers.image.description=Node.js ${{ matrix.node_version }} alpine image with pnpm ${{ needs.get-pnpm-version.outputs.pnpm_version }}
           tags: |
             # 10.32.1-node25  (full pnpm + specific node — always)
             type=raw,value=${{ needs.get-pnpm-version.outputs.pnpm_version }}-node${{ matrix.node_version }}
