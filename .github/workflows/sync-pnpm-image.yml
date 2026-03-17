@@ -66,8 +66,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-      id-token: write
-      attestations: write
     env:
       IMAGE_NAME: ghcr.io/yorukai/pnpm
       IMAGE_MAINTAINER: Dennis Rumpf <33402703+yorukai@users.noreply.github.com>
@@ -86,11 +84,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Docker metadata
-        id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.IMAGE_NAME }}
@@ -118,9 +112,6 @@ jobs:
           cache-to: type=gha,mode=max,scope=node${{ matrix.node_version }}
           context: .
           push: true
-          provenance: true
-          sbom: true
-          platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
