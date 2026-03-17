@@ -97,19 +97,7 @@ jobs:
           labels: |
             maintainer=${{ env.IMAGE_MAINTAINER }}
             description=Node.js ${{ matrix.node_version }} alpine image with pnpm ${{ needs.get-pnpm-version.outputs.pnpm_version }}
-          tags: |
-            # 10.32.1-node25  (full pnpm + specific node — always)
-            type=raw,value=${{ needs.get-pnpm-version.outputs.pnpm_version }}-node${{ matrix.node_version }}
-            # 10-node25  (pnpm major + specific node — always)
-            type=raw,value=${{ needs.get-pnpm-version.outputs.pnpm_major_version }}-node${{ matrix.node_version }}
-            # node25  (latest pnpm + specific node — always)
-            type=raw,value=node${{ matrix.node_version }}
-            # 10.32.1  (full pnpm, latest node implied — latest node only)
-            type=raw,value=${{ needs.get-pnpm-version.outputs.pnpm_version }},enable=${{ matrix.node_version == env.LATEST_NODE }}
-            # 10  (pnpm major, latest node implied — latest node only)
-            type=raw,value=${{ needs.get-pnpm-version.outputs.pnpm_major_version }},enable=${{ matrix.node_version == env.LATEST_NODE }}
-            # latest  (latest pnpm + latest node — latest node only)
-            type=raw,value=latest,enable=${{ matrix.node_version == env.LATEST_NODE }}
+          tags: type=raw,value=${{ needs.get-pnpm-version.outputs.pnpm_version }}-node${{ matrix.node_version }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -118,11 +106,42 @@ jobs:
           cache-to: type=gha,mode=max,scope=node${{ matrix.node_version }}
           context: .
           push: true
+          provenance: true
+          sbom: true
+          platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             PNPM_VERSION=${{ needs.get-pnpm-version.outputs.pnpm_version }}
             NODE_VERSION=${{ matrix.node_version }}
+
+      - name: Add and push additional tags
+        run: |
+          set -euo pipefail
+
+          primary_tag="${IMAGE_NAME}:${{ needs.get-pnpm-version.outputs.pnpm_version }}-node${{ matrix.node_version }}"
+
+          # Pull once, then create/push all aliases from the same built image.
+          docker pull "$primary_tag"
+
+          tags=(
+            "${{ needs.get-pnpm-version.outputs.pnpm_major_version }}-node${{ matrix.node_version }}"
+            "node${{ matrix.node_version }}"
+          )
+
+          if [ "${{ matrix.node_version }}" = "$LATEST_NODE" ]; then
+            tags+=(
+              "${{ needs.get-pnpm-version.outputs.pnpm_version }}"
+              "${{ needs.get-pnpm-version.outputs.pnpm_major_version }}"
+              "latest"
+            )
+          fi
+
+          for tag in "${tags[@]}"; do
+            alias_tag="${IMAGE_NAME}:$tag"
+            docker tag "$primary_tag" "$alias_tag"
+            docker push "$alias_tag"
+          done
 
   cleanup-untagged-images:
     needs: [build-pnpm, get-pnpm-version]
