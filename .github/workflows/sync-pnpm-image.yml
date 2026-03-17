@@ -108,8 +108,6 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          cache-from: type=gha,scope=node${{ matrix.node_version }}
-          cache-to: type=gha,mode=max,scope=node${{ matrix.node_version }}
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
