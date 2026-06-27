@@ -12,7 +12,7 @@ ENV PATH="$PNPM_HOME:$PATH"
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 ENV PNPM_NO_UPDATE_NOTIFIER=true
 
-RUN apk add --no-cache bash build-base g++ cairo-dev pango-dev giflib-dev && \
+RUN apk add --no-cache bash build-base g++ cairo-dev pango-dev giflib-dev librsvg && \
     npm uninstall -g yarn pnpm && \
     npm install -g pnpm@${PNPM_VERSION} && \
     npm cache clean --force
