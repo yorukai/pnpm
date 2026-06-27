@@ -9,6 +9,11 @@ on:
         description: 'Override pnpm version (e.g. 10.32.1). Leave empty to use latest.'
         required: false
         default: ''
+      force_build:
+        description: 'Force a rebuild even if the image tag already exists.'
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: sync-pnpm
@@ -21,6 +26,7 @@ jobs:
       contents: read
     env:
       PNPM_VERSION: ${{ inputs.pnpm_version }}
+      FORCE_BUILD: ${{ inputs.force_build == true }}
     outputs:
       pnpm_version: ${{ steps.get_tag.outputs.pnpm_version }}
       pnpm_major_version: ${{ steps.get_tag.outputs.pnpm_major_version }}
@@ -42,6 +48,12 @@ jobs:
         id: check
         run: |
           set -euo pipefail
+
+          if [ "$FORCE_BUILD" = 'true' ]; then
+            echo 'Force build requested; skipping existing image check.'
+            echo 'should_build=true' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           pnpm_version='${{ steps.get_tag.outputs.pnpm_version }}'
           token=$(curl -s "https://ghcr.io/token?scope=repository:yorukai/pnpm:pull" | jq -r '.token')
