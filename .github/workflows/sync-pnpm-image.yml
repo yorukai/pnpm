@@ -81,11 +81,12 @@ jobs:
     env:
       IMAGE_NAME: ghcr.io/yorukai/pnpm
       IMAGE_MAINTAINER: Dennis Rumpf <33402703+yorukai@users.noreply.github.com>
-      LATEST_NODE: '25'
+      LATEST_NODE: '26'
+      LTS_NODE: '24'
     strategy:
       fail-fast: false
       matrix:
-        node_version: ['20', '22', '24', '25']
+        node_version: ['20', '22', '24', '26']
     steps:
       - uses: actions/checkout@v4
 
