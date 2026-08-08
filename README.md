@@ -5,7 +5,7 @@ This repository automatically builds and publishes Docker images for the latest 
 ## Features
 
 - Automatically detects the latest `pnpm` release.
-- Builds images for multiple Node.js versions in parallel (20, 22, 24, 25).
+- Builds images for multiple Node.js versions in parallel (20, 22, 24, 26).
 - Publishes a comprehensive set of tags covering every pnpm × Node.js combination.
 - Scheduled daily updates via GitHub Actions.
 
@@ -17,14 +17,14 @@ This repository automatically builds and publishes Docker images for the latest 
 
 | Tag | pnpm version | Node.js version |
 |-----|-------------|-----------------|
-| `latest` | latest | latest (25) |
-| `node20`, `node22`, `node24`, `node25` | latest | specified |
-| `10` | latest 10.x | latest (25) |
-| `10-node20`, `10-node22`, `10-node24`, `10-node25` | latest 10.x | specified |
-| `10.32.1` | `10.32.1` | latest (25) |
+| `latest` | latest | latest (26) |
+| `node20`, `node22`, `node24`, `node26` | latest | specified |
+| `10` | latest 10.x | latest (26) |
+| `10-node20`, `10-node22`, `10-node24`, `10-node26` | latest 10.x | specified |
+| `10.32.1` | `10.32.1` | latest (26) |
 | `10.32.1-node20`, `10.32.1-node22`, … | `10.32.1` | specified |
 
-> **Latest Node** is currently Node.js **25**. Tags without a `-nodeXX` suffix always use this version.
+> **Latest Node** is currently Node.js **26**. Tags without a `-nodeXX` suffix always use this version.
 
 ### Example Usage
 
@@ -59,7 +59,9 @@ The GitHub Actions workflow:
 
 ## Supported Node.js Versions
 
-Currently built for: **20, 22, 24, 25**
+Currently built for: **20, 22, 24, 26**
+
+Legacy builds available for **25**
 
 To add or remove versions, update the `matrix.node_version` list and `LATEST_NODE` env var in `.github/workflows/sync-pnpm-image.yml`.
 
