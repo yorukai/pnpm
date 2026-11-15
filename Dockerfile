@@ -1,6 +1,8 @@
-ARG NODE_VERSION=25
+# NODE_SUFFIX is empty for Debian or "-alpine" for Alpine
+ARG NODE_VERSION=26
+ARG NODE_SUFFIX=""
 
-FROM node:${NODE_VERSION}-alpine
+FROM node:${NODE_VERSION}${NODE_SUFFIX}
 
 ARG PNPM_VERSION=10.32.1
 
@@ -12,7 +14,13 @@ ENV PATH="$PNPM_HOME:$PATH"
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 ENV PNPM_NO_UPDATE_NOTIFIER=true
 
-RUN apk add --no-cache bash build-base g++ cairo-dev pango-dev giflib-dev librsvg && \
+RUN if command -v apk >/dev/null; then \
+      apk add --no-cache bash build-base g++ cairo-dev pango-dev giflib-dev librsvg; \
+    else \
+      apt-get update && \
+      apt-get install -y --no-install-recommends bash build-essential g++ libcairo2-dev libpango1.0-dev libgif-dev librsvg2-dev && \
+      rm -rf /var/lib/apt/lists/*; \
+    fi && \
     npm uninstall -g yarn pnpm && \
     npm install -g pnpm@${PNPM_VERSION} && \
     npm cache clean --force

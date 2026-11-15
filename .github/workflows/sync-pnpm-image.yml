@@ -31,6 +31,8 @@ jobs:
       pnpm_version: ${{ steps.get_tag.outputs.pnpm_version }}
       pnpm_major_version: ${{ steps.get_tag.outputs.pnpm_major_version }}
       should_build: ${{ steps.check.outputs.should_build }}
+      node_versions: ${{ steps.node.outputs.node_versions }}
+      latest_node: ${{ steps.node.outputs.latest_node }}
     steps:
       - name: Get latest pnpm release tag (without leading v)
         id: get_tag
@@ -43,6 +45,16 @@ jobs:
           fi
           echo "pnpm_version=$tag" >> $GITHUB_OUTPUT
           echo "pnpm_major_version=$(echo "$tag" | cut -d. -f1)" >> $GITHUB_OUTPUT
+
+      - name: Get non-EOL Node.js versions
+        id: node
+        run: |
+          set -euo pipefail
+          today=$(date -u +%F)
+          versions=$(curl -fsS https://endoflife.date/api/nodejs.json | jq -c --arg today "$today" \
+            '[.[] | select(.eol == false or .eol > $today) | .cycle] | sort_by(tonumber)')
+          echo "node_versions=$versions" >> "$GITHUB_OUTPUT"
+          echo "latest_node=$(echo "$versions" | jq -r 'last')" >> "$GITHUB_OUTPUT"
 
       - name: Check if any image is missing on GHCR
         id: check
@@ -57,17 +69,21 @@ jobs:
 
           pnpm_version='${{ steps.get_tag.outputs.pnpm_version }}'
           token=$(curl -s "https://ghcr.io/token?scope=repository:yorukai/pnpm:pull" | jq -r '.token')
+          should_build='false'
 
-          status_code=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer $token" \
-            "https://ghcr.io/v2/yorukai/pnpm/manifests/$pnpm_version")
-
-          if [ "$status_code" = '200' ]; then
-            should_build='false'
-          else
-            echo "Missing image tag: $pnpm_version"
-            should_build='true'
-          fi
+          for node in $(echo '${{ steps.node.outputs.node_versions }}' | jq -r '.[]'); do
+            for suffix in '' '-alpine'; do
+              tag="$pnpm_version-node$node$suffix"
+              status_code=$(curl -s -o /dev/null -w "%{http_code}" \
+                -H "Authorization: Bearer $token" \
+                -H 'Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.v2+json' \
+                "https://ghcr.io/v2/yorukai/pnpm/manifests/$tag")
+              if [ "$status_code" != '200' ]; then
+                echo "Missing image tag: $tag"
+                should_build='true'
+              fi
+            done
+          done
 
           echo "should_build=$should_build" >> "$GITHUB_OUTPUT"
 
@@ -81,12 +97,17 @@ jobs:
     env:
       IMAGE_NAME: ghcr.io/yorukai/pnpm
       IMAGE_MAINTAINER: Dennis Rumpf <33402703+yorukai@users.noreply.github.com>
-      LATEST_NODE: '26'
-      LTS_NODE: '24'
+      LATEST_NODE: ${{ needs.get-pnpm-version.outputs.latest_node }}
     strategy:
       fail-fast: false
       matrix:
-        node_version: ['20', '22', '24', '26']
+        node_version: ${{ fromJSON(needs.get-pnpm-version.outputs.node_versions) }}
+        variant: [debian, alpine]
+        include:
+          - variant: debian
+            suffix: ''
+          - variant: alpine
+            suffix: '-alpine'
     steps:
       - uses: actions/checkout@v4
 
@@ -104,20 +125,14 @@ jobs:
           images: ${{ env.IMAGE_NAME }}
           labels: |
             org.opencontainers.image.authors=${{ env.IMAGE_MAINTAINER }}
-            org.opencontainers.image.description=Node.js ${{ matrix.node_version }} alpine image with pnpm ${{ needs.get-pnpm-version.outputs.pnpm_version }}
+            org.opencontainers.image.description=Node.js ${{ matrix.node_version }} ${{ matrix.variant }} image with pnpm ${{ needs.get-pnpm-version.outputs.pnpm_version }}
           tags: |
-            # 10.32.1-node25  (full pnpm + specific node — always)
-            type=raw,value=${{ needs.get-pnpm-version.outputs.pnpm_version }}-node${{ matrix.node_version }}
-            # 10-node25  (pnpm major + specific node — always)
-            type=raw,value=${{ needs.get-pnpm-version.outputs.pnpm_major_version }}-node${{ matrix.node_version }}
-            # node25  (latest pnpm + specific node — always)
-            type=raw,value=node${{ matrix.node_version }}
-            # 10.32.1  (full pnpm, latest node implied — latest node only)
-            type=raw,value=${{ needs.get-pnpm-version.outputs.pnpm_version }},enable=${{ matrix.node_version == env.LATEST_NODE }}
-            # 10  (pnpm major, latest node implied — latest node only)
-            type=raw,value=${{ needs.get-pnpm-version.outputs.pnpm_major_version }},enable=${{ matrix.node_version == env.LATEST_NODE }}
-            # latest  (latest pnpm + latest node — latest node only)
-            type=raw,value=latest,enable=${{ matrix.node_version == env.LATEST_NODE }}
+            type=raw,value=${{ needs.get-pnpm-version.outputs.pnpm_version }}-node${{ matrix.node_version }}${{ matrix.suffix }}
+            type=raw,value=${{ needs.get-pnpm-version.outputs.pnpm_major_version }}-node${{ matrix.node_version }}${{ matrix.suffix }}
+            type=raw,value=node${{ matrix.node_version }}${{ matrix.suffix }}
+            type=raw,value=${{ needs.get-pnpm-version.outputs.pnpm_version }}${{ matrix.suffix }},enable=${{ matrix.node_version == env.LATEST_NODE }}
+            type=raw,value=${{ needs.get-pnpm-version.outputs.pnpm_major_version }}${{ matrix.suffix }},enable=${{ matrix.node_version == env.LATEST_NODE }}
+            type=raw,value=latest${{ matrix.suffix }},enable=${{ matrix.node_version == env.LATEST_NODE }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -129,6 +144,7 @@ jobs:
           build-args: |
             PNPM_VERSION=${{ needs.get-pnpm-version.outputs.pnpm_version }}
             NODE_VERSION=${{ matrix.node_version }}
+            NODE_SUFFIX=${{ matrix.suffix }}
 
   cleanup-untagged-images:
     needs: [build-pnpm, get-pnpm-version]
@@ -147,3 +163,27 @@ jobs:
           min-versions-to-keep: 0
           delete-only-untagged-versions: 'true'
           token: ${{ secrets.GITHUB_TOKEN }}
+
+  update-readme:
+    needs: [build-pnpm, get-pnpm-version]
+    if: needs.get-pnpm-version.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Regenerate README Node.js table
+        run: scripts/update-readme.py '${{ needs.get-pnpm-version.outputs.pnpm_version }}'
+
+      - name: Commit README
+        run: |
+          if git diff --quiet README.md; then
+            echo 'README unchanged.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add README.md
+          git commit -m 'docs: update README for pnpm ${{ needs.get-pnpm-version.outputs.pnpm_version }}'
+          git push

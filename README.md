@@ -1,69 +1,64 @@
 # pnpm Docker Image Sync
 
-This repository automatically builds and publishes Docker images for the latest [pnpm](https://pnpm.io/) release using GitHub Actions. Images are based on Node.js Alpine and built for multiple Node.js versions.
+This repository automatically builds and publishes Docker images for the latest [pnpm](https://pnpm.io/) release using GitHub Actions. Images are based on Node.js (Debian and Alpine) and built for multiple Node.js versions.
 
 ## Features
 
 - Automatically detects the latest `pnpm` release.
-- Builds images for multiple Node.js versions in parallel (20, 22, 24, 26).
+- Builds images for multiple Node.js versions in parallel (22, 24, 26).
 - Publishes a comprehensive set of tags covering every pnpm × Node.js combination.
 - Scheduled daily updates via GitHub Actions.
 
 ## Docker Image
 
 - Registry: `ghcr.io/yorukai/pnpm`
+- Two variants per Node.js version: Debian (default) and Alpine (`-alpine` suffix).
 
 ### Tag Reference
 
-| Tag | pnpm version | Node.js version |
-|-----|-------------|-----------------|
-| `latest` | latest | latest (26) |
-| `node20`, `node22`, `node24`, `node26` | latest | specified |
-| `10` | latest 10.x | latest (26) |
-| `10-node20`, `10-node22`, `10-node24`, `10-node26` | latest 10.x | specified |
-| `10.32.1` | `10.32.1` | latest (26) |
-| `10.32.1-node20`, `10.32.1-node22`, … | `10.32.1` | specified |
-
-> **Latest Node** is currently Node.js **26**. Tags without a `-nodeXX` suffix always use this version.
+| Tag | pnpm version | Node.js version | Base |
+|-----|-------------|-----------------|------|
+| `latest` | latest | newest | Debian |
+| `latest-alpine` | latest | newest | Alpine |
+| `node26` / `node26-alpine` | latest | specified | Debian / Alpine |
+| `12-node26` / `12-node26-alpine` | latest 12.x | specified | Debian / Alpine |
+| `12.18.0-node26` / `12.18.0-node26-alpine` | `12.18.0` | specified | Debian / Alpine |
+| `12`, `12.18.0` (+ `-alpine`) | latest 12.x / exact | newest | Debian / Alpine |
 
 ### Example Usage
 
 ```bash
-# Latest pnpm on latest Node.js
 docker pull ghcr.io/yorukai/pnpm:latest
-
-# Latest pnpm on a specific Node.js version
-docker pull ghcr.io/yorukai/pnpm:node22
-
-# Latest pnpm v10.x on Node.js 22
-docker pull ghcr.io/yorukai/pnpm:10-node22
-
-# Exact pnpm version on latest Node.js
-docker pull ghcr.io/yorukai/pnpm:10.32.1
-
-# Exact pnpm version on a specific Node.js version
-docker pull ghcr.io/yorukai/pnpm:10.32.1-node22
-
-docker run --rm ghcr.io/yorukai/pnpm:latest pnpm --version
+docker pull ghcr.io/yorukai/pnpm:node26-alpine
+docker pull ghcr.io/yorukai/pnpm:12-node26
+docker pull ghcr.io/yorukai/pnpm:12.18.0-alpine
 ```
 
 ## Workflow Overview
 
-The GitHub Actions workflow:
-
 1. Fetches the latest `pnpm` release tag from GitHub.
-2. Runs a build matrix over all supported Node.js versions in parallel.
-3. For each Node.js version: checks if the image already exists in GHCR (idempotent).
-4. Builds the image and pushes all applicable tags (see table above).
-5. For the designated **latest** Node.js version, also pushes the node-version-agnostic tags (`latest`, `10`, `10.32.1`).
+2. Fetches all non-EOL Node.js versions from <https://endoflife.date/api/nodejs.json>.
+3. Builds Debian and Alpine images for each Node.js version in parallel (skipped if all tags already exist).
+4. The newest Node.js version additionally gets the version-only tags (`latest`, `12`, `12.18.0`, and `-alpine` variants).
+5. Renders `README.md` from `templates/README.md` via `scripts/update-readme.py` and commits it.
 
 ## Supported Node.js Versions
 
-Currently built for: **20, 22, 24, 26**
+Built for every non-EOL Node.js version (22, 24, 26).
 
-Legacy builds available for **25**
+| Node.js (cycle) | Latest | Status |
+|-----------------|--------|--------|
+| 26 | 26.13.0 | ![LTS](https://img.shields.io/badge/LTS-blue) |
+| 25 | 25.9.0 | ![EOL](https://img.shields.io/badge/EOL-red) |
+| 24 | 24.22.2 | ![LTS](https://img.shields.io/badge/LTS-lightgrey) |
+| 23 | 23.11.1 | ![EOL](https://img.shields.io/badge/EOL-red) |
+| 22 | 22.23.4 | ![LTS](https://img.shields.io/badge/LTS-lightgrey) |
+| 21 | 21.7.3 | ![EOL](https://img.shields.io/badge/EOL-red) |
+| 20 | 20.20.2 | ![EOL](https://img.shields.io/badge/EOL-red) |
 
-To add or remove versions, update the `matrix.node_version` list and `LATEST_NODE` env var in `.github/workflows/sync-pnpm-image.yml`.
+## Migrating old tags
+
+`scripts/migrate-alpine-tags.sh [--dry-run]` re-tags previously published Alpine images (e.g. `26` → `26-alpine`). Run it once before the first Debian build.
 
 ## Contributing
 
