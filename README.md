@@ -48,11 +48,11 @@ Built for every non-EOL Node.js version (22, 24, 26).
 
 | Node.js (cycle) | Latest | Status |
 |-----------------|--------|--------|
-| 26 | 26.13.0 | ![LTS](https://img.shields.io/badge/LTS-blue) |
+| 26 | 26.13.1 | ![LTS](https://img.shields.io/badge/LTS-blue) |
 | 25 | 25.9.0 | ![EOL](https://img.shields.io/badge/EOL-red) |
-| 24 | 24.22.2 | ![LTS](https://img.shields.io/badge/LTS-lightgrey) |
+| 24 | 24.22.3 | ![LTS](https://img.shields.io/badge/LTS-lightgrey) |
 | 23 | 23.11.1 | ![EOL](https://img.shields.io/badge/EOL-red) |
-| 22 | 22.23.4 | ![LTS](https://img.shields.io/badge/LTS-lightgrey) |
+| 22 | 22.23.5 | ![LTS](https://img.shields.io/badge/LTS-lightgrey) |
 | 21 | 21.7.3 | ![EOL](https://img.shields.io/badge/EOL-red) |
 | 20 | 20.20.2 | ![EOL](https://img.shields.io/badge/EOL-red) |
 
