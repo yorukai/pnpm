@@ -56,10 +56,6 @@ Built for every non-EOL Node.js version (22, 24, 26).
 | 21 | 21.7.3 | ![EOL](https://img.shields.io/badge/EOL-red) |
 | 20 | 20.20.2 | ![EOL](https://img.shields.io/badge/EOL-red) |
 
-## Migrating old tags
-
-`scripts/migrate-alpine-tags.sh [--dry-run]` re-tags previously published Alpine images (e.g. `26` → `26-alpine`). Run it once before the first Debian build.
-
 ## Contributing
 
 Contributions are welcome! Submit issues or pull requests to improve the workflow, update dependencies, or enhance documentation.
