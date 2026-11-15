@@ -48,10 +48,6 @@ Built for every non-EOL Node.js version ({{NODE_VERSIONS}}).
 
 {{NODE_TABLE}}
 
-## Migrating old tags
-
-`scripts/migrate-alpine-tags.sh [--dry-run]` re-tags previously published Alpine images (e.g. `{{EXAMPLE_NODE}}` → `{{EXAMPLE_NODE}}-alpine`). Run it once before the first Debian build.
-
 ## Contributing
 
 Contributions are welcome! Submit issues or pull requests to improve the workflow, update dependencies, or enhance documentation.
