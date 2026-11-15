@@ -139,6 +139,9 @@ jobs:
         with:
           context: .
           push: true
+          # Attestations make an index whose child manifests are untagged; cleanup would delete them
+          provenance: false
+          sbom: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
