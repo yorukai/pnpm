@@ -22,8 +22,8 @@ This repository automatically builds and publishes Docker images for the latest 
 | `latest-alpine` | latest | newest | Alpine |
 | `node26` / `node26-alpine` | latest | specified | Debian / Alpine |
 | `12-node26` / `12-node26-alpine` | latest 12.x | specified | Debian / Alpine |
-| `12.18.0-node26` / `12.18.0-node26-alpine` | `12.18.0` | specified | Debian / Alpine |
-| `12`, `12.18.0` (+ `-alpine`) | latest 12.x / exact | newest | Debian / Alpine |
+| `12.21.0-node26` / `12.21.0-node26-alpine` | `12.21.0` | specified | Debian / Alpine |
+| `12`, `12.21.0` (+ `-alpine`) | latest 12.x / exact | newest | Debian / Alpine |
 
 ### Example Usage
 
@@ -31,7 +31,7 @@ This repository automatically builds and publishes Docker images for the latest 
 docker pull ghcr.io/yorukai/pnpm:latest
 docker pull ghcr.io/yorukai/pnpm:node26-alpine
 docker pull ghcr.io/yorukai/pnpm:12-node26
-docker pull ghcr.io/yorukai/pnpm:12.18.0-alpine
+docker pull ghcr.io/yorukai/pnpm:12.21.0-alpine
 ```
 
 ## Workflow Overview
@@ -39,7 +39,7 @@ docker pull ghcr.io/yorukai/pnpm:12.18.0-alpine
 1. Fetches the latest `pnpm` release tag from GitHub.
 2. Fetches all non-EOL Node.js versions from <https://endoflife.date/api/nodejs.json>.
 3. Builds Debian and Alpine images for each Node.js version in parallel (skipped if all tags already exist).
-4. The newest Node.js version additionally gets the version-only tags (`latest`, `12`, `12.18.0`, and `-alpine` variants).
+4. The newest Node.js version additionally gets the version-only tags (`latest`, `12`, `12.21.0`, and `-alpine` variants).
 5. Renders `README.md` from `templates/README.md` via `scripts/update-readme.py` and commits it.
 
 ## Supported Node.js Versions
